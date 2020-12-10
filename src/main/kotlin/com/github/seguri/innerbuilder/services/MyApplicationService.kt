@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.template.services
+package com.github.seguri.innerbuilder.services
 
-import org.jetbrains.plugins.template.MyBundle
+import com.github.seguri.innerbuilder.MyBundle
 
 class MyApplicationService {
 
