@@ -1,7 +1,7 @@
 package com.github.seguri.innerbuilder;
 
-import static org.jetbrains.plugins.innerbuilder.InnerBuilderCollector.collectFields;
-import static org.jetbrains.plugins.innerbuilder.InnerBuilderOptionSelector.selectFieldsAndOptions;
+import static com.github.seguri.innerbuilder.InnerBuilderCollector.collectFields;
+import static com.github.seguri.innerbuilder.InnerBuilderOptionSelector.selectFieldsAndOptions;
 
 import com.intellij.codeInsight.CodeInsightUtilBase;
 import com.intellij.codeInsight.generation.PsiFieldMember;
@@ -29,7 +29,7 @@ public class InnerBuilderHandler implements LanguageCodeInsightActionHandler {
             return false;
         }
 
-        return org.jetbrains.plugins.innerbuilder.InnerBuilderUtils
+        return com.github.seguri.innerbuilder.InnerBuilderUtils
             .getStaticOrTopLevelClass(file, editor) != null && isApplicable(file, editor);
     }
 
@@ -69,7 +69,7 @@ public class InnerBuilderHandler implements LanguageCodeInsightActionHandler {
                 return;
             }
 
-            org.jetbrains.plugins.innerbuilder.InnerBuilderGenerator
+            com.github.seguri.innerbuilder.InnerBuilderGenerator
                 .generate(project, editor, file, selectedFields);
         }
     }

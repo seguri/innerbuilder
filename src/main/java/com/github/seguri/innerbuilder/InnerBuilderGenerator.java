@@ -1,15 +1,27 @@
 package com.github.seguri.innerbuilder;
 
-import static org.jetbrains.plugins.innerbuilder.InnerBuilderUtils.areTypesPresentableEqual;
+import static com.github.seguri.innerbuilder.InnerBuilderUtils.areTypesPresentableEqual;
 
 import com.intellij.codeInsight.generation.PsiFieldMember;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.psi.JavaPsiFacade;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiCodeBlock;
 import com.intellij.psi.PsiComment;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiElementFactory;
+import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiModifier;
+import com.intellij.psi.PsiModifierList;
+import com.intellij.psi.PsiParameter;
+import com.intellij.psi.PsiPrimitiveType;
+import com.intellij.psi.PsiStatement;
+import com.intellij.psi.PsiType;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
@@ -60,12 +72,12 @@ public class InnerBuilderGenerator implements Runnable {
 
     @Override
     public void run() {
-        final PsiClass targetClass = org.jetbrains.plugins.innerbuilder.InnerBuilderUtils
+        final PsiClass targetClass = com.github.seguri.innerbuilder.InnerBuilderUtils
             .getStaticOrTopLevelClass(file, editor);
         if (targetClass == null) {
             return;
         }
-        final Set<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options = currentOptions();
+        final Set<com.github.seguri.innerbuilder.InnerBuilderOption> options = currentOptions();
         final PsiClass builderClass = findOrCreateBuilderClass(targetClass);
         final PsiType builderType = psiElementFactory.createTypeFromText(BUILDER_CLASS_NAME, null);
         final PsiMethod constructor = generateConstructor(targetClass, builderType);
@@ -78,14 +90,14 @@ public class InnerBuilderGenerator implements Runnable {
         for (final PsiFieldMember fieldMember : selectedFields) {
             lastAddedField = findOrCreateField(builderClass, fieldMember, lastAddedField);
             if (fieldMember.getElement().hasModifierProperty(PsiModifier.FINAL)
-                    && !options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINAL_SETTERS)) {
+                    && !options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.FINAL_SETTERS)) {
                 finalFields.add(fieldMember);
                 PsiUtil.setModifierProperty((PsiField) lastAddedField, PsiModifier.FINAL, true);
             } else {
                 nonFinalFields.add(fieldMember);
             }
         }
-        if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
+        if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
             final PsiMethod newBuilderMethod = generateNewBuilderMethod(builderType, finalFields, options);
             addMethod(targetClass, null, newBuilderMethod, false);
         }
@@ -95,8 +107,8 @@ public class InnerBuilderGenerator implements Runnable {
         addMethod(builderClass, null, builderConstructorMethod, false);
 
         // builder copy constructor or static copy method
-        if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.COPY_CONSTRUCTOR)) {
-            if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
+        if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.COPY_CONSTRUCTOR)) {
+            if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
                 final PsiMethod copyBuilderMethod = generateCopyBuilderMethod(targetClass, builderType,
                         nonFinalFields, options);
                 addMethod(targetClass, null, copyBuilderMethod, true);
@@ -124,7 +136,7 @@ public class InnerBuilderGenerator implements Runnable {
 
     private PsiMethod generateCopyBuilderMethod(final PsiClass targetClass, final PsiType builderType,
                                                 final Collection<PsiFieldMember> fields,
-                                                final Set<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options) {
+                                                final Set<com.github.seguri.innerbuilder.InnerBuilderOption> options) {
         final PsiMethod copyBuilderMethod = psiElementFactory.createMethod("newBuilder", builderType);
         PsiUtil.setModifierProperty(copyBuilderMethod, PsiModifier.STATIC, true);
         PsiUtil.setModifierProperty(copyBuilderMethod, PsiModifier.PUBLIC, true);
@@ -134,10 +146,10 @@ public class InnerBuilderGenerator implements Runnable {
         final PsiModifierList parameterModifierList = parameter.getModifierList();
 
         if (parameterModifierList != null) {
-            if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS)) {
+            if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS)) {
                 parameterModifierList.addAnnotation(JSR305_NONNULL);
             }
-            if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION)) {
+            if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION)) {
                 parameterModifierList.addAnnotation(FINDBUGS_NONNULL);
             }
         }
@@ -147,7 +159,7 @@ public class InnerBuilderGenerator implements Runnable {
             final StringBuilder copyBuilderParameters = new StringBuilder();
             for (final PsiFieldMember fieldMember : selectedFields) {
                 if (fieldMember.getElement().hasModifierProperty(PsiModifier.FINAL)
-                        && !options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINAL_SETTERS)) {
+                        && !options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.FINAL_SETTERS)) {
 
                     if (copyBuilderParameters.length() > 0) {
                         copyBuilderParameters.append(", ");
@@ -156,7 +168,7 @@ public class InnerBuilderGenerator implements Runnable {
                     copyBuilderParameters.append(String.format("copy.%s", fieldMember.getElement().getName()));
                 }
             }
-            if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
+            if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
                 final PsiStatement newBuilderStatement = psiElementFactory.createStatementFromText(String.format(
                                 "%s builder = new %s(%s);", builderType.getPresentableText(),
                                 builderType.getPresentableText(), copyBuilderParameters.toString()),
@@ -178,7 +190,7 @@ public class InnerBuilderGenerator implements Runnable {
 
     private PsiMethod generateCopyConstructor(final PsiClass targetClass, final PsiType builderType,
                                               final Collection<PsiFieldMember> nonFinalFields,
-                                              final Set<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options) {
+                                              final Set<com.github.seguri.innerbuilder.InnerBuilderOption> options) {
 
         final PsiMethod copyConstructor = psiElementFactory.createConstructor(builderType.getPresentableText());
         PsiUtil.setModifierProperty(copyConstructor, PsiModifier.PUBLIC, true);
@@ -188,9 +200,9 @@ public class InnerBuilderGenerator implements Runnable {
         final PsiModifierList parameterModifierList = constructorParameter.getModifierList();
 
         if (parameterModifierList != null) {
-            if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS))
+            if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS))
                 parameterModifierList.addAnnotation(JSR305_NONNULL);
-            if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION))
+            if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION))
                 parameterModifierList.addAnnotation(FINDBUGS_NONNULL);
         }
         copyConstructor.getParameterList().add(constructorParameter);
@@ -206,7 +218,7 @@ public class InnerBuilderGenerator implements Runnable {
         for (final PsiFieldMember member : fields) {
             final PsiField field = member.getElement();
             final PsiStatement assignStatement = psiElementFactory.createStatementFromText(String.format(
-                    "%s%2$s = copy.get%3$s();", qName, field.getName(), org.jetbrains.plugins.innerbuilder.InnerBuilderUtils
+                    "%s%2$s = copy.get%3$s();", qName, field.getName(), com.github.seguri.innerbuilder.InnerBuilderUtils
                     .capitalize(field.getName())), method);
             methodBody.add(assignStatement);
         }
@@ -214,10 +226,10 @@ public class InnerBuilderGenerator implements Runnable {
 
     private PsiMethod generateBuilderConstructor(final PsiClass builderClass,
                                                  final Collection<PsiFieldMember> finalFields,
-                                                 final Set<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options) {
+                                                 final Set<com.github.seguri.innerbuilder.InnerBuilderOption> options) {
 
         final PsiMethod builderConstructor = psiElementFactory.createConstructor(builderClass.getName());
-        if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
+        if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.NEW_BUILDER_METHOD)) {
             PsiUtil.setModifierProperty(builderConstructor, PsiModifier.PRIVATE, true);
         } else {
             PsiUtil.setModifierProperty(builderConstructor, PsiModifier.PUBLIC, true);
@@ -232,11 +244,11 @@ public class InnerBuilderGenerator implements Runnable {
                 final PsiParameter parameter = psiElementFactory.createParameter(fieldName, fieldType);
                 final PsiModifierList parameterModifierList = parameter.getModifierList();
                 final boolean useJsr305 = options.contains(
-                    org.jetbrains.plugins.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS);
+                    com.github.seguri.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS);
                 final boolean useFindbugs = options.contains(
-                    org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION);
+                    com.github.seguri.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION);
 
-                if (!org.jetbrains.plugins.innerbuilder.InnerBuilderUtils.isPrimitive(field) && parameterModifierList != null) {
+                if (!com.github.seguri.innerbuilder.InnerBuilderUtils.isPrimitive(field) && parameterModifierList != null) {
                     if (useJsr305) parameterModifierList.addAnnotation(JSR305_NONNULL);
                     if (useFindbugs) parameterModifierList.addAnnotation(FINDBUGS_NONNULL);
                 }
@@ -253,7 +265,7 @@ public class InnerBuilderGenerator implements Runnable {
 
 
     private PsiMethod generateNewBuilderMethod(final PsiType builderType, final Collection<PsiFieldMember> finalFields,
-                                               final Set<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options) {
+                                               final Set<com.github.seguri.innerbuilder.InnerBuilderOption> options) {
         final PsiMethod newBuilderMethod = psiElementFactory.createMethod("newBuilder", builderType);
         PsiUtil.setModifierProperty(newBuilderMethod, PsiModifier.STATIC, true);
         PsiUtil.setModifierProperty(newBuilderMethod, PsiModifier.PUBLIC, true);
@@ -269,10 +281,10 @@ public class InnerBuilderGenerator implements Runnable {
                 final PsiModifierList parameterModifierList = parameter.getModifierList();
                 if (parameterModifierList != null) {
 
-                    if (!org.jetbrains.plugins.innerbuilder.InnerBuilderUtils.isPrimitive(field)) {
-                        if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS))
+                    if (!com.github.seguri.innerbuilder.InnerBuilderUtils.isPrimitive(field)) {
+                        if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS))
                             parameterModifierList.addAnnotation(JSR305_NONNULL);
-                        if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION))
+                        if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION))
                             parameterModifierList.addAnnotation(FINDBUGS_NONNULL);
                     }
                 }
@@ -294,35 +306,35 @@ public class InnerBuilderGenerator implements Runnable {
     }
 
     private PsiMethod generateBuilderSetter(final PsiType builderType, final PsiFieldMember member,
-                                            final Set<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options) {
+                                            final Set<com.github.seguri.innerbuilder.InnerBuilderOption> options) {
 
         final PsiField field = member.getElement();
         final PsiType fieldType = field.getType();
-        final String fieldName = org.jetbrains.plugins.innerbuilder.InnerBuilderUtils.hasOneLetterPrefix(field.getName()) ?
+        final String fieldName = com.github.seguri.innerbuilder.InnerBuilderUtils.hasOneLetterPrefix(field.getName()) ?
                 Character.toLowerCase(field.getName().charAt(1)) + field.getName().substring(2) : field.getName();
 
         final String methodName;
-        if (options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.WITH_NOTATION)) {
-            methodName = String.format("with%s", org.jetbrains.plugins.innerbuilder.InnerBuilderUtils
+        if (options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.WITH_NOTATION)) {
+            methodName = String.format("with%s", com.github.seguri.innerbuilder.InnerBuilderUtils
                 .capitalize(fieldName));
-        } else if(options.contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.SET_NOTATION)) {
-            methodName = String.format("set%s", org.jetbrains.plugins.innerbuilder.InnerBuilderUtils
+        } else if(options.contains(com.github.seguri.innerbuilder.InnerBuilderOption.SET_NOTATION)) {
+            methodName = String.format("set%s", com.github.seguri.innerbuilder.InnerBuilderUtils
                 .capitalize(fieldName));
         } else {
             methodName = fieldName;
         }
 
         final String parameterName = options.contains(
-            org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FIELD_NAMES) ?
+            com.github.seguri.innerbuilder.InnerBuilderOption.FIELD_NAMES) ?
 		fieldName :
 		!BUILDER_SETTER_DEFAULT_PARAMETER_NAME.equals(fieldName) ?
                 BUILDER_SETTER_DEFAULT_PARAMETER_NAME :
                 BUILDER_SETTER_ALTERNATIVE_PARAMETER_NAME;
         final PsiMethod setterMethod = psiElementFactory.createMethod(methodName, builderType);
         final boolean useJsr305 = options.contains(
-            org.jetbrains.plugins.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS);
+            com.github.seguri.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS);
         final boolean useFindbugs = options.contains(
-            org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION);
+            com.github.seguri.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION);
 
         if (useJsr305) setterMethod.getModifierList().addAnnotation(JSR305_NONNULL);
         if (useFindbugs) setterMethod.getModifierList().addAnnotation(FINDBUGS_NONNULL);
@@ -341,13 +353,13 @@ public class InnerBuilderGenerator implements Runnable {
         final PsiCodeBlock setterMethodBody = setterMethod.getBody();
         if (setterMethodBody != null) {
 	    final String actualFieldName =  options.contains(
-          org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FIELD_NAMES) ?
+          com.github.seguri.innerbuilder.InnerBuilderOption.FIELD_NAMES) ?
 		    "this." + fieldName :
 		    fieldName;
             final PsiStatement assignStatement = psiElementFactory.createStatementFromText(String.format(
                     "%s = %s;", actualFieldName, parameterName), setterMethod);
             setterMethodBody.add(assignStatement);
-            setterMethodBody.add(org.jetbrains.plugins.innerbuilder.InnerBuilderUtils
+            setterMethodBody.add(com.github.seguri.innerbuilder.InnerBuilderUtils
                 .createReturnThis(psiElementFactory, setterMethod));
         }
         setSetterComment(setterMethod, fieldName, parameterName);
@@ -392,14 +404,14 @@ public class InnerBuilderGenerator implements Runnable {
         return constructor;
     }
 
-    private PsiMethod generateBuildMethod(final PsiClass targetClass, final Set<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options) {
+    private PsiMethod generateBuildMethod(final PsiClass targetClass, final Set<com.github.seguri.innerbuilder.InnerBuilderOption> options) {
         final PsiType targetClassType = psiElementFactory.createType(targetClass);
         final PsiMethod buildMethod = psiElementFactory.createMethod("build", targetClassType);
 
         final boolean useJsr305 = options.contains(
-            org.jetbrains.plugins.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS);
+            com.github.seguri.innerbuilder.InnerBuilderOption.JSR305_ANNOTATIONS);
         final boolean useFindbugs = options.contains(
-            org.jetbrains.plugins.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION);
+            com.github.seguri.innerbuilder.InnerBuilderOption.FINDBUGS_ANNOTATION);
         if (useJsr305)
             buildMethod.getModifierList().addAnnotation(JSR305_NONNULL);
         if (useFindbugs)
@@ -462,7 +474,7 @@ public class InnerBuilderGenerator implements Runnable {
         PsiMethod existingMethod = target.findMethodBySignature(newMethod, false);
         if (existingMethod == null && newMethod.isConstructor()) {
             for (final PsiMethod constructor : target.getConstructors()) {
-                if (org.jetbrains.plugins.innerbuilder.InnerBuilderUtils.areParameterListsEqual(constructor.getParameterList(),
+                if (com.github.seguri.innerbuilder.InnerBuilderUtils.areParameterListsEqual(constructor.getParameterList(),
                         newMethod.getParameterList())) {
                     existingMethod = constructor;
                     break;
@@ -481,11 +493,11 @@ public class InnerBuilderGenerator implements Runnable {
         return existingMethod;
     }
 
-    private static EnumSet<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> currentOptions() {
-        final EnumSet<org.jetbrains.plugins.innerbuilder.InnerBuilderOption> options = EnumSet.noneOf(
-            org.jetbrains.plugins.innerbuilder.InnerBuilderOption.class);
+    private static EnumSet<com.github.seguri.innerbuilder.InnerBuilderOption> currentOptions() {
+        final EnumSet<com.github.seguri.innerbuilder.InnerBuilderOption> options = EnumSet.noneOf(
+            com.github.seguri.innerbuilder.InnerBuilderOption.class);
         final PropertiesComponent propertiesComponent = PropertiesComponent.getInstance();
-        for (final org.jetbrains.plugins.innerbuilder.InnerBuilderOption option : org.jetbrains.plugins.innerbuilder.InnerBuilderOption
+        for (final com.github.seguri.innerbuilder.InnerBuilderOption option : com.github.seguri.innerbuilder.InnerBuilderOption
             .values()) {
             final boolean currentSetting = propertiesComponent.getBoolean(option.getProperty(), false);
             if (currentSetting) {
@@ -496,7 +508,7 @@ public class InnerBuilderGenerator implements Runnable {
     }
 
     private void setBuilderComment(final PsiClass clazz, final PsiClass targetClass) {
-        if (currentOptions().contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.WITH_JAVADOC)) {
+        if (currentOptions().contains(com.github.seguri.innerbuilder.InnerBuilderOption.WITH_JAVADOC)) {
             StringBuilder str = new StringBuilder("/**\n").append("* {@code ");
             str.append(targetClass.getName()).append("} builder static inner class.\n");
             str.append("*/");
@@ -505,13 +517,13 @@ public class InnerBuilderGenerator implements Runnable {
     }
 
     private void setBuilderAnnotation(final PsiClass clazz) {
-        if (currentOptions().contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.PMD_AVOID_FIELD_NAME_MATCHING_METHOD_NAME_ANNOTATION)) {
+        if (currentOptions().contains(com.github.seguri.innerbuilder.InnerBuilderOption.PMD_AVOID_FIELD_NAME_MATCHING_METHOD_NAME_ANNOTATION)) {
             clazz.getModifierList().addAnnotation("SuppressWarnings(\"PMD.AvoidFieldNameMatchingMethodName\")");
         }
     }
 
     private void setSetterComment(final PsiMethod method, final String fieldName, final String parameterName) {
-        if (currentOptions().contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.WITH_JAVADOC)) {
+        if (currentOptions().contains(com.github.seguri.innerbuilder.InnerBuilderOption.WITH_JAVADOC)) {
             StringBuilder str = new StringBuilder("/**\n").append("* Sets the {@code ").append(fieldName);
             str.append("} and returns a reference to this Builder so that the methods can be chained together.\n");
             str.append("* @param ").append(parameterName).append(" the {@code ");
@@ -522,7 +534,7 @@ public class InnerBuilderGenerator implements Runnable {
     }
 
     private void setBuildMethodComment(final PsiMethod method, final PsiClass targetClass) {
-        if (currentOptions().contains(org.jetbrains.plugins.innerbuilder.InnerBuilderOption.WITH_JAVADOC)) {
+        if (currentOptions().contains(com.github.seguri.innerbuilder.InnerBuilderOption.WITH_JAVADOC)) {
             StringBuilder str = new StringBuilder("/**\n");
             str.append("* Returns a {@code ").append(targetClass.getName()).append("} built ");
             str.append("from the parameters previously set.\n*\n");

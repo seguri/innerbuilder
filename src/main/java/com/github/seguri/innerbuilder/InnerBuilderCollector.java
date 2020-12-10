@@ -1,6 +1,6 @@
 package com.github.seguri.innerbuilder;
 
-import static org.jetbrains.plugins.innerbuilder.InnerBuilderUtils.hasLowerCaseChar;
+import static com.github.seguri.innerbuilder.InnerBuilderUtils.hasLowerCaseChar;
 
 import com.intellij.codeInsight.generation.PsiFieldMember;
 import com.intellij.openapi.editor.Editor;
@@ -105,7 +105,7 @@ public final class InnerBuilderCollector {
     {
         for(int i = 0; i < clazz.getAllMethods().length; i++)
         {
-            if(clazz.getAllMethods()[i].getName().equals(String.format("set%s", org.jetbrains.plugins.innerbuilder.InnerBuilderUtils
+            if(clazz.getAllMethods()[i].getName().equals(String.format("set%s", com.github.seguri.innerbuilder.InnerBuilderUtils
                 .capitalize(name))))
             {
                 return true;

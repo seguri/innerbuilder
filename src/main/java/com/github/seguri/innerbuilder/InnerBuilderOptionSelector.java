@@ -14,31 +14,31 @@ import javax.swing.JCheckBox;
 import org.jetbrains.annotations.Nullable;
 
 public final class InnerBuilderOptionSelector {
-    private static final List<org.jetbrains.plugins.innerbuilder.SelectorOption> OPTIONS = createGeneratorOptions();
+    private static final List<com.github.seguri.innerbuilder.SelectorOption> OPTIONS = createGeneratorOptions();
 
-    private static List<org.jetbrains.plugins.innerbuilder.SelectorOption> createGeneratorOptions() {
-        final List<org.jetbrains.plugins.innerbuilder.SelectorOption> options = new ArrayList<org.jetbrains.plugins.innerbuilder.SelectorOption>(8);
+    private static List<com.github.seguri.innerbuilder.SelectorOption> createGeneratorOptions() {
+        final List<com.github.seguri.innerbuilder.SelectorOption> options = new ArrayList<com.github.seguri.innerbuilder.SelectorOption>(8);
 
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Generate builder methods for final fields")
                         .withMnemonic('f')
                         .withOption(InnerBuilderOption.FINAL_SETTERS)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Generate static newBuilder() method")
                         .withMnemonic('n')
                         .withOption(InnerBuilderOption.NEW_BUILDER_METHOD)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Generate builder copy constructor")
                         .withMnemonic('o')
                         .withOption(InnerBuilderOption.COPY_CONSTRUCTOR)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Use 'with...' notation")
                         .withMnemonic('w')
                         .withToolTip(
@@ -47,7 +47,7 @@ public final class InnerBuilderOptionSelector {
                         .withOption(InnerBuilderOption.WITH_NOTATION)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Use 'set...' notation")
                         .withMnemonic('t')
                         .withToolTip(
@@ -56,7 +56,7 @@ public final class InnerBuilderOptionSelector {
                         .withOption(InnerBuilderOption.SET_NOTATION)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Add JSR-305 @Nonnull annotation")
                         .withMnemonic('j')
                         .withToolTip(
@@ -65,7 +65,7 @@ public final class InnerBuilderOptionSelector {
                         .withOption(InnerBuilderOption.JSR305_ANNOTATIONS)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Add @SuppressWarnings(\"PMD.AvoidFieldNameMatchingMethodName\") annotation")
                         .withMnemonic('p')
                         .withToolTip(
@@ -73,7 +73,7 @@ public final class InnerBuilderOptionSelector {
                         .withOption(InnerBuilderOption.PMD_AVOID_FIELD_NAME_MATCHING_METHOD_NAME_ANNOTATION)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Add Findbugs @NonNull annotation")
                         .withMnemonic('b')
                         .withToolTip(
@@ -82,7 +82,7 @@ public final class InnerBuilderOptionSelector {
                         .withOption(InnerBuilderOption.FINDBUGS_ANNOTATION)
                         .build());
         options.add(
-                org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+                com.github.seguri.innerbuilder.SelectorOption.newBuilder()
                         .withCaption("Add Javadoc")
                         .withMnemonic('c')
                         .withToolTip("Add Javadoc to generated builder class and methods")
@@ -90,7 +90,7 @@ public final class InnerBuilderOptionSelector {
                         .build());
 
 	options.add(
-		org.jetbrains.plugins.innerbuilder.SelectorOption.newBuilder()
+		com.github.seguri.innerbuilder.SelectorOption.newBuilder()
 			.withCaption("Use field names in setter")
 			.withMnemonic('s')
 			.withToolTip(
@@ -146,7 +146,7 @@ public final class InnerBuilderOptionSelector {
     }
 
     private static JCheckBox buildOptionCheckBox(final PropertiesComponent propertiesComponent,
-                                                 final org.jetbrains.plugins.innerbuilder.SelectorOption selectorOption) {
+                                                 final com.github.seguri.innerbuilder.SelectorOption selectorOption) {
         final InnerBuilderOption option = selectorOption.getOption();
 
         final JCheckBox optionCheckBox = new NonFocusableCheckBox(selectorOption.getCaption());
